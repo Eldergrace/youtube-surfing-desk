@@ -2,7 +2,7 @@
 
 YouTube Surfing Desk の主な変更履歴を記録します。
 
-## [1.0.0] — 正式リリース準備中
+## [1.0.0] — 2026-10-14 正式リリース
 
 ### Added
 - DOMAIN → CATEGORY → TOPIC の階層からYouTube検索テーマを選択する機能。
