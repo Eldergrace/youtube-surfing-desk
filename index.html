@@ -1,0 +1,1316 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>YouTube Surfing Desk</title>
+
+<style>
+:root{
+  --bg:#f4f7fb;--panel:#fff;--line:#c9d6e8;--soft:#edf4ff;
+  --blue:#2f67bf;--blue2:#174a9c;--text:#1f2937;--muted:#667085;
+  --red:#d62828;--amber:#fff8d9;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden}
+body{
+  background:var(--bg);
+  font-family:"Meiryo","Yu Gothic",system-ui,sans-serif;
+  color:var(--text);
+}
+.app{
+  width:min(1500px,98vw);
+  height:calc(100vh - 12px);
+  margin:6px auto;
+  background:#fff;
+  border:1px solid var(--line);
+  box-shadow:0 6px 18px rgba(30,64,175,.08);
+  display:grid;
+  grid-template-rows:36px 70px minmax(0,1fr) 132px;
+  overflow:hidden;
+}
+header{
+  background:linear-gradient(#3c78d8,#2f67bf);
+  color:#fff;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  position:relative;
+  padding:0 12px;
+}
+header h1{margin:0;font-size:18px}
+header p{
+  position:absolute;right:10px;top:50%;transform:translateY(-50%);
+  margin:0;font-size:10px;opacity:.9
+}
+.controls{
+  background:#e7effa;
+  border-bottom:1px solid var(--line);
+  padding:5px 10px;
+  display:grid;
+  grid-template-rows:30px 30px;
+  align-content:center;
+  overflow:visible;
+}
+.row{
+  display:flex;
+  gap:5px 8px;
+  align-items:center;
+  flex-wrap:nowrap;
+  justify-content:flex-start;
+  min-width:0;
+  margin:0;
+}
+.label{
+  flex:0 0 72px;
+  font-size:11px;
+  font-weight:700;
+  color:#55709f;
+  white-space:nowrap;
+}
+.chip{
+  border:1px solid #8ca8d2;background:#fff;color:#174a9c;
+  border-radius:999px;padding:3px 8px;font-size:11px;cursor:pointer;
+  white-space:nowrap;
+}
+.chip.active{
+  background:#c8ff7d;color:#173b00;border-color:#7cab43;font-weight:700
+}
+.chip.active:before{content:"✓ "}
+
+.filter-inline{
+  display:flex;align-items:center;gap:6px;white-space:nowrap
+}
+.filter-select{
+  height:25px;
+  border:1px solid #8ca8d2;
+  background:#fff;
+  color:#174a9c;
+  border-radius:5px;
+  font-size:11px;
+  padding:0 22px 0 7px;
+}
+#timeArea,#placeArea,#regionArea{display:inline-flex;align-items:center;gap:5px}
+
+.workspace{
+  display:grid;
+  grid-template-columns:180px 220px minmax(0,1fr) 285px;
+  min-height:0;
+  overflow:hidden;
+}
+.pane{min-width:0;min-height:0;overflow:hidden}
+.domain,.discovery{background:#f8fafc}
+.domain{border-right:1px solid var(--line)}
+.category{border-right:1px solid var(--line)}
+.discovery{border-left:1px solid var(--line)}
+.phead{
+  height:28px;
+  display:flex;align-items:center;justify-content:center;
+  color:#5876aa;font-size:11px;font-weight:700;letter-spacing:.12em;
+  border-bottom:1px solid var(--line);padding:0
+}
+#domainNav,#categoryNav{
+  height:calc(100% - 28px);
+  overflow:hidden;
+  display:flex;
+  flex-direction:column;
+}
+.navbtn{
+  flex:1 1 0;
+  min-height:0;
+  width:100%;
+  text-align:left;
+  border:0;
+  background:transparent;
+  padding:0 9px;
+  color:#174a9c;
+  cursor:pointer;
+  font-size:12px;
+  display:flex;
+  align-items:center;
+}
+.navbtn:hover{background:#eef5ff}
+.navbtn.active{background:#e7f0ff;font-weight:700}
+.navbtn.active:before{content:"▶ ";margin-right:3px}
+.category .navbtn{border-bottom:1px solid #eef2f7}
+
+.topic-wrap{
+  height:calc(100% - 28px);
+  padding:8px 10px 10px;
+  overflow-y:auto;
+  overflow-x:hidden;
+}
+.topic-title{
+  font-size:12px;font-weight:700;color:#4f6fa4;margin-bottom:6px
+}
+.topic-grid{
+  display:flex;flex-wrap:wrap;gap:4px 9px;align-content:flex-start
+}
+.topic{
+  border:0;background:transparent;color:#1646c0;
+  font-size:12px;padding:2px 0;cursor:pointer
+}
+.topic:hover{text-decoration:underline}
+.topic.active{
+  background:#eef4ff;border:1px solid #adc2e6;border-radius:4px;
+  padding:2px 5px;font-weight:700
+}
+.topic.active:before{content:"✓ "}
+.empty{color:var(--muted);font-size:12px;padding:12px}
+
+#discoveryButtons{
+  height:auto;
+  padding:7px 7px 2px;
+}
+.discbtn{
+  display:block;width:100%;
+  margin:0 0 6px;
+  border:1px solid #cbd8eb;background:#fff;color:#174a9c;
+  border-radius:5px;padding:6px 8px;text-align:left;cursor:pointer;font-size:12px
+}
+.discbtn:hover{background:#eef5ff}
+.disc-result{
+  margin:5px 7px;
+  background:var(--amber);
+  border:1px solid #dec86c;
+  border-radius:6px;
+  padding:6px;
+  display:none;
+  max-height:calc(100% - 188px);
+  overflow-y:auto;
+  overflow-x:hidden;
+  scrollbar-gutter:stable;
+  overscroll-behavior:contain;
+}
+.disc-result.show{display:block}
+.disc-result h3{font-size:11px;margin:0 0 4px;color:#725e00}
+.disc-choice{
+  border:1px solid #d7bd58;background:#fffdf2;color:#6d5900;
+  border-radius:6px;padding:5px 7px;font-size:11px;margin:2px;
+  cursor:pointer;max-width:100%;line-height:1.25;
+  text-align:left;vertical-align:top
+}
+#discChoices{
+  display:flex;
+  flex-wrap:wrap;
+  align-items:flex-start;
+  gap:3px 4px;
+}
+#discChoices .disc-choice{
+  width:auto;
+  max-width:100%;
+  margin:0;
+  white-space:normal;
+  overflow:visible;
+  text-overflow:clip;
+  min-height:24px;
+}
+
+.current{
+  position:static;
+  background:#edf4ff;
+  border-top:2px solid #a9c0df;
+  padding:7px 10px 8px;
+  box-shadow:0 -3px 8px rgba(30,64,175,.05);
+  overflow:hidden;
+}
+.free-row,.gen-row{
+  display:grid;
+  grid-template-columns:112px 1fr auto;
+  gap:7px;align-items:center
+}
+.free-row{margin-bottom:5px}
+.fieldlabel{font-size:11px;font-weight:700;color:#4f6fa4}
+input[type=text]{
+  width:100%;height:29px;border:1px solid #8facd8;border-radius:5px;
+  padding:0 8px;font-size:13px
+}
+.smallbtn{
+  height:29px;border:1px solid #aabbd4;background:#fff;color:#475569;
+  border-radius:5px;padding:0 8px;cursor:pointer;font-size:11px
+}
+.state{
+  display:block;
+  margin:4px 0;
+  min-height:25px;
+  overflow:hidden;
+}
+
+.current-summary{
+  width:100%;
+  min-height:25px;
+  border:1px solid #9db6da;
+  background:#fff;
+  color:#214b8f;
+  border-radius:5px;
+  padding:4px 8px;
+  font-size:11px;
+  line-height:16px;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+.statechip{
+  border:1px solid #9db6da;background:#fff;color:#214b8f;
+  border-radius:999px;padding:3px 7px;font-size:11px;white-space:nowrap
+}
+.addtopic{
+  display:none;border:1px solid #94a9c8;background:#fff;border-radius:999px;
+  padding:3px 7px;font-size:10px;cursor:pointer;white-space:nowrap
+}
+.addtopic.show{display:inline-block}
+.youtube{
+  height:29px;border:0;background:var(--red);color:#fff;border-radius:6px;
+  padding:0 14px;font-weight:700;cursor:pointer;font-size:12px
+}
+.status{font-size:9px;line-height:10px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+
+/* ---------- Responsive Design Specification Ver.1.0 ---------- */
+.mobile-select-wrap,.mobile-controls{display:none}
+
+/* Desktop: 1200px+ and sufficient height. Fixed viewport. */
+@media (min-width:1200px) and (min-height:700px){
+  .topic-wrap{scrollbar-gutter:stable}
+}
+
+/* Desktop low-height: keep 4 columns, allow page scroll. */
+@media (min-width:1200px) and (max-height:699px){
+  html,body{height:auto;overflow:auto}
+  .app{
+    height:auto;
+    min-height:700px;
+    margin:6px auto;
+    grid-template-rows:36px 70px minmax(520px,1fr) 132px;
+    overflow:visible;
+  }
+  .workspace{min-height:520px}
+  .topic-wrap,.disc-result{scrollbar-gutter:stable}
+}
+
+/* Tablet: 768–1199px. Page scroll, DOMAIN+CATEGORY / TOPIC / DISCOVERY. */
+@media (min-width:768px) and (max-width:1199px) and (min-height:501px){
+  html,body{height:auto;overflow:auto}
+  body{background:var(--bg)}
+  .app{
+    width:min(1100px,100%);
+    height:auto;
+    min-height:100vh;
+    margin:0 auto;
+    grid-template-rows:auto auto auto auto;
+    overflow:visible;
+  }
+  header{min-height:42px}
+  header p{position:static;transform:none;margin-left:auto;font-size:9px}
+  .controls{
+    grid-template-rows:auto auto;
+    padding:7px 10px;
+  }
+  .row{
+    flex-wrap:wrap;
+    min-height:30px;
+    padding:2px 0;
+  }
+  .label{flex:0 0 62px}
+  #howArea{display:flex;flex-wrap:wrap;gap:5px}
+
+  .workspace{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    grid-template-areas:
+      "domain category"
+      "topic topic"
+      "discovery discovery";
+    min-height:0;
+    overflow:visible;
+  }
+  .domain{grid-area:domain;border-right:1px solid var(--line);border-bottom:1px solid var(--line)}
+  .category{grid-area:category;border-right:0;border-bottom:1px solid var(--line)}
+  .topic-pane{grid-area:topic;min-height:250px;border-bottom:1px solid var(--line)}
+  .discovery{
+    grid-area:discovery;
+    border-left:0;
+    border-bottom:1px solid var(--line);
+    min-height:150px;
+    background:#f8fafc;
+  }
+  #domainNav,#categoryNav{
+    height:300px;
+    min-height:300px;
+  }
+  .topic-wrap{
+    height:auto;
+    max-height:360px;
+    min-height:210px;
+    overflow-y:auto;
+  }
+  #discoveryButtons{
+    display:flex;
+    flex-wrap:wrap;
+    gap:6px;
+    padding:8px;
+  }
+  .discbtn{
+    width:auto;
+    min-width:120px;
+    margin:0;
+    text-align:center;
+  }
+  .disc-result{
+    max-height:220px;
+    overflow-y:auto;
+    margin:0 8px 10px;
+  }
+  .current{
+    position:static;
+    overflow:visible;
+    padding:9px 10px 12px;
+  }
+}
+
+/* Smartphone: <=767px. One-column staged selection. */
+@media (max-width:767px){
+  html,body{height:auto;overflow:auto}
+  body{padding-bottom:62px}
+  .app{
+    width:100%;
+    height:auto;
+    min-height:100vh;
+    margin:0;
+    border-left:0;border-right:0;
+    grid-template-rows:auto auto auto;
+    overflow:visible;
+  }
+  header{
+    min-height:44px;
+    padding:0 10px;
+  }
+  header h1{font-size:17px}
+  header p{display:none}
+
+  /* Desktop HOW/FILTER hidden; mobile copy is placed after TOPIC. */
+  .controls{display:none}
+
+  .workspace{
+    display:flex;
+    flex-direction:column;
+    min-height:0;
+    overflow:visible;
+  }
+  .pane{overflow:visible}
+  .domain,.category,.topic-pane,.discovery{
+    border:0;
+    border-bottom:1px solid var(--line);
+    min-height:0;
+  }
+  .phead{
+    height:30px;
+    justify-content:flex-start;
+    padding:0 12px;
+    letter-spacing:.08em;
+    background:#f5f8fc;
+  }
+
+  /* DOMAIN/CATEGORY become selects. */
+  #domainNav,#categoryNav{display:none}
+  .mobile-select-wrap{
+    display:block;
+    padding:9px 12px 11px;
+    background:#fff;
+  }
+  .mobile-nav-select{
+    width:100%;
+    height:38px;
+    border:1px solid #8ca8d2;
+    background:#fff;
+    color:#174a9c;
+    border-radius:7px;
+    padding:0 10px;
+    font-size:14px;
+  }
+
+  /* TOPIC remains browseable, no inner scroll. */
+  .topic-wrap{
+    height:auto;
+    max-height:none;
+    min-height:0;
+    padding:10px 12px 14px;
+    overflow:visible;
+  }
+  .topic-title{font-size:12px;margin-bottom:8px}
+  .topic-grid{
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:7px;
+  }
+  .topic{
+    width:100%;
+    min-height:34px;
+    border:1px solid #d7e1ef;
+    background:#fff;
+    border-radius:7px;
+    padding:6px 7px;
+    text-align:center;
+    line-height:1.25;
+  }
+  .topic.active{padding:6px 7px}
+
+  /* Mobile HOW/FILTER after TOPIC. */
+  .mobile-controls{
+    display:block;
+    border-bottom:1px solid var(--line);
+    background:#eef4fb;
+    padding:9px 12px 11px;
+  }
+  .mobile-control-section + .mobile-control-section{margin-top:10px}
+  .mobile-section-title{
+    color:#5876aa;
+    font-size:11px;
+    font-weight:700;
+    letter-spacing:.08em;
+    margin-bottom:6px;
+  }
+  .mobile-chip-area{
+    display:flex;
+    flex-wrap:wrap;
+    gap:6px;
+  }
+  .mobile-chip-area .chip{
+    font-size:12px;
+    padding:6px 9px;
+  }
+  .mobile-filter-row{
+    display:grid;
+    grid-template-columns:46px minmax(0,1fr);
+    align-items:center;
+    gap:7px;
+    margin-top:6px;
+    font-size:12px;
+    color:#4f6fa4;
+  }
+  .mobile-filter-row .filter-select{
+    width:100%;
+    height:34px;
+    font-size:12px;
+  }
+  #mobilePlaceArea,#mobileTimeArea,#mobileRegionArea{min-width:0}
+  #mobileRegionArea{grid-column:2}
+
+  /* DISCOVERY: buttons in two columns; results expand in page flow. */
+  .discovery{background:#f8fafc}
+  #discoveryButtons{
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:7px;
+    padding:9px 12px;
+  }
+  .discbtn{
+    width:100%;
+    margin:0;
+    min-height:38px;
+    text-align:center;
+    padding:7px 5px;
+    font-size:12px;
+  }
+  .disc-result{
+    max-height:none;
+    overflow:visible;
+    margin:0 12px 12px;
+    padding:8px;
+  }
+  #discChoices{gap:5px}
+  .disc-choice{font-size:12px}
+
+  /* CURRENT: normal flow; breadcrumb-like compact display. */
+  .current{
+    position:static;
+    overflow:visible;
+    padding:10px 12px 78px;
+  }
+  .free-row,.gen-row{
+    grid-template-columns:1fr;
+    gap:5px;
+  }
+  .fieldlabel{
+    font-size:11px;
+    margin-top:2px;
+  }
+  input[type=text]{height:38px;font-size:14px}
+  .smallbtn{
+    width:max-content;
+    height:30px;
+    justify-self:end;
+  }
+  .state{margin:8px 0}
+  .current-summary{
+    min-height:34px;
+    white-space:normal;
+    overflow:visible;
+    text-overflow:clip;
+    line-height:18px;
+    font-size:11px;
+  }
+  .status{
+    white-space:normal;
+    overflow:visible;
+    text-overflow:clip;
+    line-height:14px;
+    font-size:10px;
+  }
+
+  /* YouTube action stays available while scrolling. */
+  .youtube{
+    position:fixed;
+    z-index:50;
+    left:12px;
+    right:12px;
+    bottom:10px;
+    width:calc(100% - 24px);
+    height:46px;
+    border-radius:10px;
+    box-shadow:0 4px 16px rgba(0,0,0,.18);
+    font-size:14px;
+  }
+}
+
+/* Landscape smartphone: keep smartphone UI even when width is tablet-like. */
+@media (max-height:500px) and (max-width:1000px){
+  html,body{height:auto;overflow:auto}
+  body{padding-bottom:58px}
+  .app{
+    width:100%;
+    height:auto;
+    min-height:100vh;
+    margin:0;
+    border-left:0;border-right:0;
+    grid-template-rows:auto auto auto;
+    overflow:visible;
+  }
+  header{min-height:40px}
+  header p{display:none}
+  .controls{display:none}
+  .workspace{
+    display:flex;
+    flex-direction:column;
+    overflow:visible;
+  }
+  #domainNav,#categoryNav{display:none}
+  .mobile-select-wrap{display:block;padding:7px 12px}
+  .mobile-nav-select{width:100%;height:34px}
+  .topic-wrap{height:auto;max-height:none;overflow:visible}
+  .topic-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}
+  .mobile-controls{display:block;padding:7px 12px}
+  .mobile-chip-area{display:flex;flex-wrap:wrap;gap:5px}
+  #discoveryButtons{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;padding:7px 12px}
+  .discbtn{width:100%;margin:0;text-align:center}
+  .disc-result{max-height:none;overflow:visible}
+  .current{padding:8px 12px 70px;overflow:visible}
+  .free-row,.gen-row{grid-template-columns:1fr}
+  .youtube{
+    position:fixed;
+    left:12px;right:12px;bottom:8px;
+    width:calc(100% - 24px);
+    height:42px;
+    z-index:50;
+  }
+}
+
+/* ---------- Ver.1.4.1 Desktop CATEGORY + TOPIC aligned bands ---------- */
+@media (min-width:1200px){
+  /* TOPIC側のCATEGORY見出しは表示しない。 */
+  #topicTitle{display:none}
+
+  /* DOMAINはVer.1.3と同じ等分行高を維持。選択色だけ別系統。 */
+  #domainNav .navbtn.active{
+    background:#dbeafe;
+    color:#123f87;
+  }
+
+  /* CATEGORYはVer.1.3本来の flex:1 を維持し、8行を等分表示。 */
+  #categoryNav{
+    height:calc(100% - 28px);
+    overflow:hidden;
+    display:flex;
+    flex-direction:column;
+  }
+  #categoryNav .navbtn{
+    flex:1 1 0;
+    min-height:0;
+    padding:0 9px;
+    align-items:center;
+    border-radius:0;
+  }
+
+  /* CATEGORY/TOPICを同じゼブラ帯にする。 */
+  #categoryNav .navbtn:nth-child(odd),
+  .topic-category-group:nth-child(odd){
+    background:#fbfbfc;
+  }
+  #categoryNav .navbtn:nth-child(even),
+  .topic-category-group:nth-child(even){
+    background:#eef1f4;
+  }
+  #categoryNav .navbtn:hover{
+    box-shadow:inset 0 0 0 999px rgba(47,103,191,.035);
+  }
+  #categoryNav .navbtn.active{
+    font-weight:700;
+    box-shadow:inset 3px 0 0 #6f8fb8;
+  }
+
+  /*
+    TOPIC側もCATEGORYと同じ8等分。
+    Ver.1.4で追加した42px固定/JS同期を廃止し、
+    Ver.1.3と同じ縦方向の行高感に戻す。
+  */
+  .topic-wrap{
+    padding:0;
+    overflow-y:auto;
+    overflow-x:hidden;
+  }
+  #topicGrid.topic-grid{
+    display:flex;
+    flex-direction:column;
+    height:100%;
+    min-height:100%;
+  }
+  .topic-category-group{
+    flex:1 1 0;
+    min-height:0;
+    margin:0;
+    padding:0 8px;
+    border-radius:0;
+    display:flex;
+    align-items:center;
+  }
+  .topic-category-items{
+    display:flex;
+    flex-wrap:wrap;
+    gap:4px 9px;
+    align-content:center;
+  }
+}
+
+
+
+/* ---------- Release Step [2] About / Disclaimer ---------- */
+.release-info-links{position:absolute;right:10px;top:7px;display:flex;gap:10px;z-index:5}
+.release-info-links button{border:0;background:transparent;color:#fff;font-size:10px;cursor:pointer;padding:2px 4px;opacity:.9}
+.release-info-links button:hover{text-decoration:underline;opacity:1}
+.info-modal{position:fixed;inset:0;background:rgba(20,32,48,.42);display:none;align-items:center;justify-content:center;z-index:9999;padding:20px}
+.info-modal.open{display:flex}
+.info-card{width:min(680px,92vw);max-height:82vh;overflow:auto;background:#fff;border-radius:10px;box-shadow:0 14px 40px rgba(0,0,0,.22);padding:22px 24px;color:#24364b}
+.info-card h2{margin:0 0 14px;font-size:20px;color:#194f96}
+.info-card h3{margin:18px 0 8px;font-size:14px}
+.info-card p{font-size:13px;line-height:1.75;margin:0 0 10px}
+.info-close{float:right;border:1px solid #b8c8dc;background:#fff;border-radius:6px;padding:4px 10px;cursor:pointer}
+@media(max-width:767px){.release-info-links{right:6px;top:5px;gap:4px}.release-info-links button{font-size:9px}.info-card{padding:18px}}
+
+</style>
+
+</head>
+<body>
+<div class="release-info-links" aria-label="サイト情報">
+<button type="button" data-info-open="about">About</button>
+<button type="button" data-info-open="disclaimer">Disclaimer</button>
+</div>
+
+<div class="app">
+<header><h1>YouTube Surfing Desk</h1><p>Application Ver.1.0 RC.2.2</p></header>
+
+<section class="controls">
+  <div class="row"><span class="label">HOW</span><span id="howArea"></span></div>
+  <div class="row">
+    <span class="label">FILTER</span>
+    <span class="filter-inline">時代 <span id="timeArea"></span></span>
+    <span class="filter-inline">場所 <span id="placeArea"></span></span>
+    <span id="regionArea"></span>
+  </div>
+</section>
+
+<section class="workspace">
+  <aside class="pane domain">
+    <div class="phead">DOMAIN</div>
+    <div class="mobile-select-wrap"><select id="mobileDomainSelect" class="mobile-nav-select"></select></div>
+    <div id="domainNav"></div>
+  </aside>
+  <aside class="pane category">
+    <div class="phead">CATEGORY</div>
+    <div class="mobile-select-wrap"><select id="mobileCategorySelect" class="mobile-nav-select"></select></div>
+    <div id="categoryNav"></div>
+  </aside>
+  <main class="pane topic-pane">
+    <div class="phead">TOPIC</div>
+    <div class="topic-wrap"><div id="topicTitle" class="topic-title">DOMAINを選択してください</div><div id="topicGrid" class="topic-grid"></div></div>
+  </main>
+
+  <section class="mobile-controls">
+    <div class="mobile-control-section">
+      <div class="mobile-section-title">HOW</div>
+      <div id="mobileHowArea" class="mobile-chip-area"></div>
+    </div>
+    <div class="mobile-control-section">
+      <div class="mobile-section-title">FILTER</div>
+      <div class="mobile-filter-row"><span>時代</span><span id="mobileTimeArea"></span></div>
+      <div class="mobile-filter-row"><span>場所</span><span id="mobilePlaceArea"></span><span id="mobileRegionArea"></span></div>
+    </div>
+  </section>
+
+  <aside class="pane discovery">
+    <div class="phead">DISCOVERY</div>
+    <div id="discoveryButtons"></div>
+    <div id="discResult" class="disc-result"><h3 id="discTitle"></h3><div id="discChoices"></div></div>
+  </aside>
+</section>
+
+<section class="current">
+  <div class="free-row">
+    <div class="fieldlabel">FREE QUERY</div>
+    <input id="baseQuery" type="text" placeholder="例：量子力学（この入力は勝手に消えません）">
+    <button class="smallbtn" id="clearBase">入力をクリア</button>
+  </div>
+
+  <div class="state" id="stateArea"></div>
+
+  <div class="gen-row">
+    <div class="fieldlabel">GENERATED QUERY</div>
+    <input id="generatedQuery" type="text" placeholder="TOPICまたはFREE QUERYから生成されます">
+    <button class="youtube" id="youtubeBtn">YouTubeで見る</button>
+  </div>
+  <div class="status" id="status"></div>
+</section>
+</div>
+
+<script src="js/category-master.js"></script>
+<script src="js/control-master.js"></script>
+<script src="js/discovery-master.js"></script>
+<script>
+
+const CAT=YOUTUBE_SURFING_CATEGORY_MASTER, CTL=YOUTUBE_SURFING_CONTROL_MASTER, DISC=YOUTUBE_SURFING_DISCOVERY_MASTER;
+
+// Control Master Ver.1.1 compatibility helpers.
+// The published master uses `query_terms` for FILTER and
+// `query_behavior` for HOW. Older prototype code expected `terms`.
+function filterTerms(item){
+  if(!item) return [];
+  return Array.isArray(item.query_terms) ? item.query_terms :
+         Array.isArray(item.terms) ? item.terms : [];
+}
+function howTerms(item, contentType){
+  if(!item) return [];
+  if(item.query_behavior){
+    const qb=item.query_behavior;
+    if(qb.by_content_type){
+      return qb.by_content_type[contentType] ??
+             qb.by_content_type.general ??
+             qb.default_terms ?? [];
+    }
+    return qb.default_terms ?? [];
+  }
+  if(item.terms){
+    return item.terms[contentType] ?? item.terms.general ?? [];
+  }
+  return [];
+}
+function regionItems(){
+  const sel=CTL.filters?.place?.country_region_selector?.items;
+  if(Array.isArray(sel)) return sel;
+  const legacy=CTL.filters?.place?.regions;
+  if(Array.isArray(legacy)) return legacy.map((label,i)=>({id:`LEGACY_${i}`,label,query_terms:[label]}));
+  return [];
+}
+
+const state={domain:null,category:null,topicId:null,topic:"",how:null,time:"FT00",place:"FP00",region:"",includeTopicWithBase:false,manualGenerated:false};
+
+function typeFor(topic){
+  const knowledgeDomains=["D01","D02","D03","D04"];
+  if(["D07"].includes(state.domain)) return "entertainment";
+  if(["D08"].includes(state.domain)) return "travel";
+  if(["D06"].includes(state.domain)) return "hobby";
+  if(["散歩","車窓","自然音","雨音","夜景","ライブカメラ","作業用"].includes(topic)) return "ambient";
+  return knowledgeDomains.includes(state.domain) ? "knowledge" : "general";
+}
+function uniqTerms(arr){return [...new Set(arr.filter(Boolean))];}
+
+function currentCategory(){
+  const d=CAT.domains.find(x=>x.id===state.domain);
+  return d?.categories.find(x=>x.id===state.category) || null;
+}
+
+function activeQueryAnchor(){
+  const c=currentCategory();
+  if(!c) return "";
+  if(c.query_anchor_status!=="active") return "";
+  return (c.query_anchor || "").trim();
+}
+
+function containsTerm(text,term){
+  if(!text || !term) return false;
+  return text.toLowerCase().includes(term.toLowerCase());
+}
+
+function buildQuery(){
+  const base=document.getElementById("baseQuery").value.trim();
+  let terms=[];
+  if(base) terms.push(base);
+  if(state.topic && !containsTerm(base,state.topic)) terms.push(state.topic);
+
+  // Category Master Ver.1.3:
+  // Add query_anchor only for CATEGORYs whose status is "active".
+  // Do not add it when BASE QUERY or TOPIC already contains the same anchor.
+  const anchor=activeQueryAnchor();
+  if(
+    anchor &&
+    !containsTerm(base,anchor) &&
+    !containsTerm(state.topic,anchor)
+  ){
+    terms.push(anchor);
+  }
+
+  if(state.how){
+    const h=CTL.how.items.find(x=>x.id===state.how);
+    const t=typeFor(state.topic);
+    const add=howTerms(h,t);
+    terms.push(...add);
+  }
+  const tf=CTL.filters.time.items.find(x=>x.id===state.time);
+  terms.push(...filterTerms(tf));
+  const pf=CTL.filters.place.items.find(x=>x.id===state.place);
+  terms.push(...filterTerms(pf));
+  if(state.region){
+    const r=regionItems().find(x=>x.id===state.region || x.label===state.region);
+    terms.push(...(r ? filterTerms(r) : [state.region]));
+  }
+  return uniqTerms(terms).join(" ").replace(/\s+/g," ").trim();
+}
+function renderGenerated(){
+  const g=document.getElementById("generatedQuery");
+  if(!state.manualGenerated) g.value=buildQuery();
+  const base=document.getElementById("baseQuery").value.trim();
+  const anchor=activeQueryAnchor();
+  let msg="自動生成モード";
+  if(state.topic) msg += " ／ TOPIC反映中";
+  if(anchor) msg += ` ／ CATEGORY Anchor「${anchor}」反映中`;
+  if(base) msg += " ／ FREE QUERY保持中";
+  document.getElementById("status").textContent = state.manualGenerated
+    ? "生成検索語を手動編集しています。ナビゲーションやHOW/FILTERを変更すると自動生成へ戻ります。"
+    : msg;
+}
+function autoMode(){state.manualGenerated=false;renderAll();}
+
+function renderHowHost(host){
+  host.innerHTML="";
+  CTL.how.items.forEach(x=>{
+    const b=document.createElement("button");
+    b.className="chip"+(state.how===x.id?" active":"");
+    b.textContent=x.label;
+    b.onclick=()=>{state.how=state.how===x.id?null:x.id;autoMode()};
+    host.appendChild(b)
+  });
+}
+function makeFilterSelect(items,current,onchange){
+  const s=document.createElement("select");
+  s.className="filter-select";
+  items.forEach(x=>{
+    const o=document.createElement("option");
+    o.value=x.id;o.textContent=x.label;
+    if(current===x.id)o.selected=true;
+    s.appendChild(o)
+  });
+  s.onchange=()=>onchange(s.value);
+  return s;
+}
+function renderFilterHosts(timeHost,placeHost,regionHost){
+  timeHost.innerHTML="";placeHost.innerHTML="";regionHost.innerHTML="";
+  timeHost.appendChild(makeFilterSelect(CTL.filters.time.items,state.time,v=>{state.time=v;autoMode()}));
+  placeHost.appendChild(makeFilterSelect(CTL.filters.place.items,state.place,v=>{
+    state.place=v;if(state.place!=="FP04")state.region="";autoMode()
+  }));
+  if(state.place==="FP04"){
+    const rs=document.createElement("select");rs.className="filter-select";
+    const blank=document.createElement("option");blank.value="";blank.textContent="選択なし";rs.appendChild(blank);
+    regionItems().forEach(r=>{
+      const o=document.createElement("option");o.value=r.id;o.textContent=r.label;
+      if(state.region===r.id)o.selected=true;rs.appendChild(o)
+    });
+    rs.onchange=()=>{state.region=rs.value;autoMode()};
+    regionHost.appendChild(rs)
+  }
+}
+function renderControls(){
+  renderHowHost(document.getElementById("howArea"));
+  renderFilterHosts(
+    document.getElementById("timeArea"),
+    document.getElementById("placeArea"),
+    document.getElementById("regionArea")
+  );
+  const mh=document.getElementById("mobileHowArea");
+  if(mh){
+    renderHowHost(mh);
+    renderFilterHosts(
+      document.getElementById("mobileTimeArea"),
+      document.getElementById("mobilePlaceArea"),
+      document.getElementById("mobileRegionArea")
+    );
+  }
+}
+function renderDomains(){
+  const host=document.getElementById("domainNav");host.innerHTML="";
+  CAT.domains.forEach(d=>{
+    const b=document.createElement("button");
+    b.className="navbtn"+(state.domain===d.id?" active":"");
+    b.textContent=d.name;
+    b.onclick=()=>{state.domain=d.id;state.category=null;state.topicId=null;state.topic="";autoMode()};
+    host.appendChild(b)
+  });
+
+  const ms=document.getElementById("mobileDomainSelect");
+  if(ms){
+    ms.innerHTML="";
+    const p=document.createElement("option");p.value="";p.textContent="DOMAINを選択";ms.appendChild(p);
+    CAT.domains.forEach(d=>{
+      const o=document.createElement("option");o.value=d.id;o.textContent=d.name;
+      if(state.domain===d.id)o.selected=true;ms.appendChild(o)
+    });
+    ms.onchange=()=>{
+      state.domain=ms.value||null;
+      state.category=null;state.topicId=null;state.topic="";
+      autoMode()
+    };
+  }
+}
+function renderCategories(){
+  const host=document.getElementById("categoryNav");host.innerHTML="";
+  const d=CAT.domains.find(x=>x.id===state.domain);
+  if(!d){host.innerHTML='<div class="empty">DOMAINを選ぶとCATEGORYが表示されます。</div>';}
+  else{
+    d.categories.forEach(c=>{
+      const b=document.createElement("button");
+      b.className="navbtn"+(state.category===c.id?" active":"");
+      b.textContent=c.name;
+      b.onclick=()=>{state.category=c.id;state.topicId=null;state.topic="";autoMode()};
+      host.appendChild(b)
+    });
+  }
+
+  const ms=document.getElementById("mobileCategorySelect");
+  if(ms){
+    ms.innerHTML="";
+    const p=document.createElement("option");
+    p.value="";p.textContent=d?"CATEGORYを選択":"先にDOMAINを選択";
+    ms.appendChild(p);
+    ms.disabled=!d;
+    if(d){
+      d.categories.forEach(c=>{
+        const o=document.createElement("option");o.value=c.id;o.textContent=c.name;
+        if(state.category===c.id)o.selected=true;ms.appendChild(o)
+      });
+    }
+    ms.onchange=()=>{
+      state.category=ms.value||null;
+      state.topicId=null;state.topic="";
+      autoMode()
+    };
+  }
+}
+function renderTopics(){
+  const grid=document.getElementById("topicGrid"),
+        title=document.getElementById("topicTitle");
+  grid.innerHTML="";
+
+  const d=CAT.domains.find(x=>x.id===state.domain);
+  const isDesktop=window.matchMedia("(min-width:1200px)").matches;
+
+  if(!d){
+    title.textContent="DOMAINを選択してください";
+    return;
+  }
+
+  /* Desktop Ver.1.4
+     DOMAIN選択 → CATEGORY表示 + TOPIC表示。
+     TOPIC欄内のCATEGORY名は省略し、CATEGORY列と同じ交互背景色で対応を示す。 */
+  if(isDesktop){
+    title.textContent="";
+    d.categories.forEach(c=>{
+      const group=document.createElement("div");
+      group.className="topic-category-group";
+      group.dataset.categoryId=c.id;
+
+      const items=document.createElement("div");
+      items.className="topic-category-items";
+
+      c.topics.forEach(t=>{
+        const b=document.createElement("button");
+        b.className="topic"+(state.topicId===t.id?" active":"");
+        b.textContent=t.label;
+        b.dataset.topicId=t.id;
+        b.dataset.categoryId=c.id;
+        if(t.context)b.dataset.topicContext=t.context;
+        b.onclick=()=>{
+          if(state.topicId===t.id){
+            state.topicId=null; state.topic="";
+          }else{
+            state.category=c.id;
+            state.topicId=t.id;
+            state.topic=t.label;
+          }
+          autoMode();
+        };
+        items.appendChild(b);
+      });
+
+      group.appendChild(items);
+      grid.appendChild(group);
+    });
+    return;
+  }
+
+  /* Tablet / Smartphone: 従来の段階選択を維持。 */
+  const c=d.categories.find(x=>x.id===state.category);
+  if(!c){
+    title.textContent="CATEGORYを選択してください";
+    return;
+  }
+  title.textContent=`${d.name} → ${c.name}`;
+  c.topics.forEach(t=>{
+    const b=document.createElement("button");
+    b.className="topic"+(state.topicId===t.id?" active":"");
+    b.textContent=t.label;
+    b.dataset.topicId=t.id;
+    if(t.context)b.dataset.topicContext=t.context;
+    b.onclick=()=>{
+      if(state.topicId===t.id){state.topicId=null;state.topic="";}
+      else{state.topicId=t.id;state.topic=t.label;}
+      autoMode();
+    };
+    grid.appendChild(b)
+  });
+}
+function discoveryEntry(){
+  if(!state.topicId) return null;
+  return DISC.topics.find(x=>x.topic_id===state.topicId) || null;
+}
+function discoveryActionData(key){
+  const e=discoveryEntry();
+  if(!e) return null;
+  if(key==="related") return e.actions.related || [];
+  if(key==="narrower") return e.actions.narrower || [];
+  if(key==="broader") return e.actions.broader || [];
+  if(key==="surprise") return e.actions.surprise || [];
+  return null;
+}
+function discoveryRegistered(key){
+  if(key==="random") return true;
+  const a=discoveryActionData(key);
+  return Array.isArray(a) && a.length>0;
+}
+function renderDiscovery(){
+  const host=document.getElementById("discoveryButtons");host.innerHTML="";
+  CTL.discovery.items.forEach(x=>{
+    const b=document.createElement("button");
+    b.className="discbtn";
+    b.textContent=x.label;
+    const available=discoveryRegistered(x.key);
+    if(!available){
+      b.disabled=true;
+      b.title=state.topic ? "このTOPICはDiscovery Master Ver.1.0未登録です" : "先にTOPICを選択してください";
+      b.style.opacity=".45";
+      b.style.cursor="not-allowed";
+    }else{
+      b.onclick=()=>runDiscovery(x.key);
+    }
+    host.appendChild(b)
+  });
+}
+function allTopics(){return CAT.domains.flatMap(d=>d.categories.flatMap(c=>c.topics.map(t=>({t:t.label,topic:t,d,c}))));}
+function byTopicId(id){return allTopics().find(x=>x.topic.id===id) || null;}
+function runDiscovery(key){
+  const box=document.getElementById("discResult"),
+        choices=document.getElementById("discChoices"),
+        title=document.getElementById("discTitle");
+  let list=[];
+
+  if(key==="random"){
+    list=allTopics().sort(()=>Math.random()-.5).slice(0,5).map(x=>({
+      type:"topic",
+      label:x.topic.label,
+      topic_id:x.topic.id,
+      category_id:x.c.id,
+      domain_id:x.d.id
+    }));
+  }else{
+    list=discoveryActionData(key) || [];
+  }
+
+  title.textContent=CTL.discovery.items.find(x=>x.key===key)?.label || "DISCOVERY";
+  choices.innerHTML="";
+
+  if(!list.length){
+    choices.innerHTML='<span style="font-size:11px;color:#725e00">候補未登録</span>';
+    box.classList.add("show");
+    return;
+  }
+
+  list.forEach(v=>{
+    const b=document.createElement("button");
+    b.className="disc-choice";
+    b.textContent=v.label;
+    b.title=v.label;
+    b.onclick=()=>selectDiscoveryCandidate(v);
+    choices.appendChild(b)
+  });
+  box.classList.add("show");
+}
+function selectDiscoveryCandidate(v){
+  if(v.type==="topic"){
+    const hit=byTopicId(v.topic_id);
+    if(hit){
+      state.domain=hit.d.id;
+      state.category=hit.c.id;
+      state.topicId=hit.topic.id;
+      state.topic=hit.topic.label;
+    }else{
+      state.domain=v.domain_id||state.domain;
+      state.category=v.category_id||state.category;
+      state.topicId=v.topic_id||null;
+      state.topic=v.label;
+    }
+  }else if(v.type==="dynamic_subtopic" || v.type==="search_seed"){
+    state.topicId=null;
+    state.topic=v.label;
+  }else if(v.type==="category"){
+    state.domain=v.domain_id||state.domain;
+    state.category=v.category_id;
+    state.topicId=null;
+    state.topic="";
+  }else if(v.type==="domain"){
+    state.domain=v.domain_id;
+    state.category=null;
+    state.topicId=null;
+    state.topic="";
+  }
+  state.manualGenerated=false;
+  document.getElementById("discResult").classList.remove("show");
+  renderAll();
+}
+function renderState(){
+  const host=document.getElementById("stateArea");host.innerHTML="";
+  const d=CAT.domains.find(x=>x.id===state.domain), c=d?.categories.find(x=>x.id===state.category);
+  const parts=[];
+  if(d) parts.push(`DOMAIN: ${d.name}`);
+  if(c) parts.push(`CATEGORY: ${c.name}`);
+  if(state.topic) parts.push(`TOPIC: ${state.topic}`);
+  const hh=CTL.how.items.find(x=>x.id===state.how);
+  if(hh) parts.push(`HOW: ${hh.label}`);
+  const tf=CTL.filters.time.items.find(x=>x.id===state.time);
+  if(filterTerms(tf).length) parts.push(`時代: ${tf.label}`);
+  const pf=CTL.filters.place.items.find(x=>x.id===state.place);
+  if(filterTerms(pf).length) parts.push(`場所: ${pf.label}`);
+  if(state.region){
+    const r=regionItems().find(x=>x.id===state.region);
+    parts.push(`地域: ${r ? r.label : state.region}`);
+  }
+
+  const s=document.createElement("div");
+  s.className="current-summary";
+  {
+    const phone=window.matchMedia("(max-width:767px), (max-height:500px) and (max-width:1000px)").matches;
+    if(phone){
+      const nav=[];
+      if(d)nav.push(d.name);if(c)nav.push(c.name);if(state.topic)nav.push(state.topic);
+      const mods=[];
+      if(hh)mods.push(hh.label);
+      if(filterTerms(tf).length)mods.push(tf.label);
+      if(filterTerms(pf).length)mods.push(pf.label);
+      if(state.region){
+        const rr=regionItems().find(x=>x.id===state.region);
+        mods.push(rr?rr.label:state.region);
+      }
+      s.textContent=(nav.length?nav.join(" ＞ "):"選択なし")+(mods.length?" ／ "+mods.join("・"):"");
+    }else{
+      s.textContent=parts.length ? parts.join("  ＞  ") : "選択なし";
+    }
+  }
+  s.title=s.textContent;
+  host.appendChild(s);
+}
+
+
+function renderAll(){
+  renderControls();renderDomains();renderCategories();renderTopics();renderDiscovery();renderState();renderGenerated();
+}
+document.getElementById("baseQuery").addEventListener("input",()=>{state.manualGenerated=false;renderState();renderGenerated()});
+document.getElementById("clearBase").onclick=()=>{document.getElementById("baseQuery").value="";autoMode()};
+document.getElementById("generatedQuery").addEventListener("input",()=>{state.manualGenerated=true;renderGenerated()});
+document.getElementById("youtubeBtn").onclick=()=>{const q=document.getElementById("generatedQuery").value.trim();if(!q){alert("検索語を入力するかTOPICを選択してください。");return;}window.open("https://www.youtube.com/results?search_query="+encodeURIComponent(q),"_blank","noopener")};
+document.getElementById("generatedQuery").addEventListener("keydown",e=>{if(e.key==="Enter")document.getElementById("youtubeBtn").click()});
+window.addEventListener("resize",()=>{
+  renderState();
+  renderCategories();
+  renderTopics();
+});
+renderAll();
+</script>
+<script id="about-disclaimer-init">
+const RELEASE_INFO={
+about:`<h2 id="infoTitle">About YouTube Surfing Desk</h2>
+<p>YouTube Surfing Deskは、YouTubeの動画を「検索する」だけでなく、興味のある分野を眺めながら次のテーマを見つけるための検索支援ツールです。</p>
+<p>DOMAIN、CATEGORY、TOPICをたどりながらテーマを選び、HOW、FILTER、DISCOVERYを組み合わせて検索の方向を調整できます。</p>
+<p>YouTubeを目的地検索だけではなく、「知識や興味をサーフィンする場所」として楽しむためのツールを目指しています。</p>
+<h3>非公式ツールについて</h3>
+<p>YouTube Surfing DeskはYouTubeの非公式検索支援ツールです。YouTubeおよびGoogleが提供、承認、提携、運営するサービスではありません。</p>`,
+disclaimer:`<h2 id="infoTitle">Disclaimer</h2>
+<p>YouTube Surfing Deskは、YouTube上の動画を探すための非公式検索支援ツールです。</p>
+<p>本ツールおよび本ツールから生成される検索語について、正確性、完全性、安全性、有用性、最新性を保証するものではありません。</p>
+<p>検索結果やリンク先など、外部サービス上のコンテンツは各作成者・権利者に帰属します。本ツールは、それら外部コンテンツの内容を保証または推奨するものではありません。</p>
+<p>医療、法律、金融その他の重要な判断に関しては、本ツールや検索結果だけに依存せず、公的機関などの一次情報や、必要に応じて適切な専門家の情報を確認してください。</p>
+<p>外部サイト・外部サービスの利用は、それぞれの利用条件等を確認のうえ、ご自身の判断で行ってください。</p>
+<h3>Privacy</h3>
+<p>初期公開版では、ユーザーアカウント機能を設けず、本ツール独自のサーバーに検索履歴や個人情報を保存する機能を設けません。また、本ツール独自のアクセス解析・広告機能も導入しない方針です。</p>
+<p>将来、アクセス解析、Cookie、API、ユーザーデータ保存などの機能を追加する場合は、Privacyに関する説明を見直します。</p>`
+};
+
+document.addEventListener("DOMContentLoaded",()=>{
+  const modal=document.getElementById("infoModal");
+  const body=document.getElementById("infoBody");
+  const closeButton=document.getElementById("infoClose");
+  const openButtons=document.querySelectorAll("[data-info-open]");
+
+  if(!modal || !body || !closeButton || !openButtons.length){
+    console.error("About/Disclaimer UI initialization failed.");
+    return;
+  }
+
+  const close=()=>{
+    modal.classList.remove("open");
+    modal.setAttribute("aria-hidden","true");
+  };
+
+  openButtons.forEach(button=>{
+    button.addEventListener("click",()=>{
+      const key=button.dataset.infoOpen;
+      body.innerHTML=RELEASE_INFO[key] || "";
+      modal.classList.add("open");
+      modal.setAttribute("aria-hidden","false");
+    });
+  });
+
+  closeButton.addEventListener("click",close);
+  modal.addEventListener("click",event=>{
+    if(event.target===modal) close();
+  });
+  document.addEventListener("keydown",event=>{
+    if(event.key==="Escape" && modal.classList.contains("open")) close();
+  });
+});
+</script>
+<div id="infoModal" class="info-modal" aria-hidden="true">
+  <div class="info-card" role="dialog" aria-modal="true" aria-labelledby="infoTitle">
+    <button type="button" class="info-close" id="infoClose">閉じる</button>
+    <div id="infoBody"></div>
+  </div>
+</div>
+
+</body>
+</html>
